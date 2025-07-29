@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manoj SJ | Advanced Calculator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" onerror="this.href='https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css';">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet" onerror="this.href='https://fonts.googleapis.com/css2?family=Arial&display=swap';">
+    <style>
+        body {
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .calculator {
+            background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+            padding: 20px;
+            border-radius: 12px;
+            width: 400px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .display-container {
+            background-color: #4a5568;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .display {
+            background-color: #2d3748;
+            color: #48bb78;
+            padding: 15px;
+            text-align: right;
+            font-size: 2.2em;
+            border-radius: 4px;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+
+        .btn {
+            padding: 12px;
+            background-color: #4a5568;
+            color: #e5e7eb;
+            border-radius: 6px;
+            border: none;
+        }
+
+        .error-message {
+            color: #f56565;
+            font-size: 0.9em;
+            text-align: right;
+            padding: 5px;
+            display: none;
+        }
+
+        /* Hidden by default */
+    </style>
+</head>
+
+<body>
+    <div class="calculator">
+        <div class="flex justify-between items-center mb-4">
+            <h4 class="text-lg text-white font-semibold">Advanced Calculator</h4>
+        </div>
+        <div class="display-container">
+            <div class="memory-indicator text-sm text-yellow-400 text-left font-mono hidden" id="memoryIndicator">M</div>
+            <div class="history-display text-sm text-gray-300 text-right font-mono" id="history"></div>
+            <div class="display" id="display">0</div>
+            <div class="error-message" id="error"></div> <!-- No longer hidden by default, but errors are avoided -->
+        </div>
+        <div class="buttons grid grid-cols-5 gap-2">
+            <button class="btn clear bg-red-600 text-white p-3 rounded-lg" onclick="clearDisplay()">C</button>
+            <button class="btn function bg-gray-600 text-white p-3 rounded-lg" onclick="backspace()">⌫</button>
+            <button class="btn function bg-gray-600 text-white p-3 rounded-lg" onclick="memoryClear()">MC</button>
+            <button class="btn function bg-gray-600 text-white p-3 rounded-lg" onclick="memoryRecall()">MR</button>
+            <button class="btn function bg-gray-600 text-white p-3 rounded-lg" onclick="memoryAdd()">M+</button>
+            <button class="btn number bg-gray-700 text-white p-3 rounded-lg" onclick="appendNumber('7')">7</button>
+            <button class="btn number bg-gray-700 text-white p-3 rounded-lg" onclick="appendNumber('8')">8</button>
+            <button class="btn number bg-gray-700 text-white p-3 rounded-lg" onclick="appendNumber('9')">9</button>
+            <button class="btn operator bg-yellow-600 text-white p-3 rounded-lg" onclick="appendOperator('/')">/</button>
+            <button class="btn function bg-gray-600 text-white p-3 rounded-lg" onclick="memorySubtract()">M-</button>
+            <button class="btn number bg-gray-700 text-white p-3 rounded-lg" onclick="appendNumber('4')">4</button>
+            <button class="btn number bg-gray-700 text-white p-3 rounded-lg" onclick="appendNumber('5')">5</button>
+            <button class="btn number bg-gray-700 text-white p-3 rounded-lg" onclick="appendNumber('6')">6</button>
+            <button class="btn operator bg-yellow-600 text-white p-3 rounded-lg" onclick="appendOperator('*')">×</button>
+            <button class="btn function bg-green-600 text-white p-3 rounded-lg" onclick="calculatePercentage()">%</button>
+            <button class="btn number bg-gray-700 text-white p-3 rounded-lg" onclick="appendNumber('1')">1</button>
+            <button class="btn number bg-gray-700 text-white p-3 rounded-lg" onclick="appendNumber('2')">2</button>
+            <button class="btn number bg-gray-700 text-white p-3 rounded-lg" onclick="appendNumber('3')">3</button>
+            <button class="btn operator bg-yellow-600 text-white p-3 rounded-lg" onclick="appendOperator('-')">-</button>
+            <button class="btn number bg-gray-700 text-white p-3 rounded-lg col-span-2" onclick="appendNumber('0')">0</button>
+            <button class="btn number bg-gray-700 text-white p-3 rounded-lg" onclick="appendNumber('.')">.</button>
+            <button class="btn operator bg-yellow-600 text-white p-3 rounded-lg" onclick="appendOperator('+')">+</button>
+            <button class="btn function bg-green-600 text-white p-3 rounded-lg" onclick="calculateSquareRoot()">√</button>
+            <button class="btn equals bg-blue-600 text-white p-3 rounded-lg" onclick="calculate()">=</button>
+        </div>
+    </div>
+    <script>
+        // Initialize elements
+        const display = document.getElementById('display');
+        const historyDisplay = document.getElementById('history');
+        const errorMessage = document.getElementById('error');
+        const memoryIndicator = document.getElementById('memoryIndicator');
+        let currentInput = '0';
+        let previousInput = '';
+        let operator = '';
+        let shouldResetDisplay = false;
+        let memory = 0;
+
+        // Update memory indicator
+        function updateMemoryIndicator() {
+            memoryIndicator.classList.toggle('hidden', memory === 0);
+        }
+
+        // Validate numeric input
+        function isValidNumber(str) {
+            return /^-?\d*\.?\d+$/.test(str) && !isNaN(parseFloat(str));
+        }
+
+        // Append number or decimal with silent correction
+        function appendNumber(number) {
+            if (shouldResetDisplay) {
+                currentInput = number;
+                shouldResetDisplay = false;
+            } else if (number === '.' && currentInput.includes('.')) {
+                return; // Silently ignore duplicate decimal
+            } else if (number === '.' && !currentInput) {
+                currentInput = '0.';
+            } else {
+                currentInput = currentInput === '0' && number !== '.' ? number : currentInput + number;
+            }
+            if (!isValidNumber(currentInput)) {
+                currentInput = '0'; // Reset to 0 without error
+            }
+            updateDisplay();
+        }
+
+        // Append operator with silent validation
+        function appendOperator(op) {
+            if (!currentInput || !isValidNumber(currentInput)) {
+                currentInput = '0'; // Reset invalid input
+                return;
+            }
+            if (currentInput && (previousInput || operator)) calculate();
+            previousInput = currentInput;
+            operator = op;
+            historyDisplay.textContent = `${previousInput} ${op}`;
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        // Update display
+        function updateDisplay() {
+            display.textContent = currentInput.length > 12 ? currentInput.slice(0, 12) + '...' : currentInput;
+            if (!operator) historyDisplay.textContent = '';
+        }
+
+        // Clear all
+        function clearDisplay() {
+            currentInput = '0';
+            previousInput = '';
+            operator = '';
+            shouldResetDisplay = false;
+            historyDisplay.textContent = '';
+            updateDisplay();
+        }
+
+        // Backspace
+        function backspace() {
+            currentInput = currentInput.length > 1 ? currentInput.slice(0, -1) : '0';
+            if (!isValidNumber(currentInput)) {
+                currentInput = '0'; // Reset without error
+            }
+            updateDisplay();
+        }
+
+        // Perform calculation with infinity for division by zero
+        function calculate() {
+            if (!previousInput || !currentInput || !operator) return;
+
+            const num1 = parseFloat(previousInput);
+            const num2 = parseFloat(currentInput);
+
+            if (isNaN(num1) || isNaN(num2)) {
+                currentInput = '0'; // Reset without error
+                return;
+            }
+
+            let result;
+            switch (operator) {
+                case '+':
+                    result = num1 + num2;
+                    break;
+                case '-':
+                    result = num1 - num2;
+                    break;
+                case '*':
+                    result = num1 * num2;
+                    break;
+                case '/':
+                    if (num2 === 0) {
+                        result = '∞';
+                    } else {
+                        result = num1 / num2;
+                    }
+                    break;
+                default:
+                    currentInput = '0'; // Reset for unknown operator
+                    return;
+            }
+
+            if (typeof result === 'number' && !isFinite(result)) {
+                currentInput = '0'; // Reset without error
+                return;
+            }
+            if (typeof result === 'number' && result.toString().length > 12) {
+                result = result.toPrecision(10); // Adjust precision silently
+            }
+
+            currentInput = result.toString();
+            previousInput = '';
+            operator = '';
+            shouldResetDisplay = true;
+            historyDisplay.textContent = '';
+            updateDisplay();
+        }
+
+        // Calculate percentage with silent correction
+        function calculatePercentage() {
+            if (!currentInput || !isValidNumber(currentInput)) {
+                currentInput = '0'; // Reset invalid input
+                return;
+            }
+            const num = parseFloat(currentInput);
+            let result = num / 100;
+
+            if (previousInput && operator) {
+                const prevNum = parseFloat(previousInput);
+                if (isNaN(prevNum)) {
+                    currentInput = '0'; // Reset invalid previous number
+                    return;
+                }
+                result = (operator === '+' || operator === '-') ? prevNum * (num / 100) : num / 100;
+            }
+
+            currentInput = result.toString();
+            historyDisplay.textContent = `${previousInput || ''} ${operator || ''} ${num}%`;
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        // Memory functions with silent correction
+        function memoryAdd() {
+            if (currentInput && isValidNumber(currentInput)) memory += parseFloat(currentInput);
+            else currentInput = '0'; // Reset invalid input
+            updateMemoryIndicator();
+        }
+
+        function memorySubtract() {
+            if (currentInput && isValidNumber(currentInput)) memory -= parseFloat(currentInput);
+            else currentInput = '0'; // Reset invalid input
+            updateMemoryIndicator();
+        }
+
+        function memoryRecall() {
+            currentInput = memory.toString();
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        function memoryClear() {
+            memory = 0;
+            updateMemoryIndicator();
+        }
+
+        // Calculate square root with silent correction
+        function calculateSquareRoot() {
+            if (!currentInput || !isValidNumber(currentInput)) {
+                currentInput = '0'; // Reset invalid input
+                return;
+            }
+            const num = parseFloat(currentInput);
+            if (num < 0) {
+                currentInput = '0'; // Reset for negative number
+                return;
+            }
+            currentInput = Math.sqrt(num).toString();
+            historyDisplay.textContent = `√(${num})`;
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            e.preventDefault();
+            const key = e.key;
+            if (/[0-9]/.test(key)) appendNumber(key);
+            else if (key === '.') appendNumber('.');
+            else if (['+', '-', '*', '/'].includes(key)) appendOperator(key);
+            else if (key === 'Enter' || key === '=') calculate();
+            else if (key === 'Escape') clearDisplay();
+            else if (key === 'Backspace') backspace();
+            else if (key.toLowerCase() === 'p') calculatePercentage();
+            else if (key.toLowerCase() === 'm') memoryRecall();
+        });
+
+        // Initialize
+        updateMemoryIndicator();
+    </script>
+</body>
+
+</html>
